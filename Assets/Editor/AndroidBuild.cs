@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 using System.IO;
 
@@ -26,16 +27,17 @@ public static class AndroidBuild
         EditorUserBuildSettings.buildAppBundle = false;
         EditorUserBuildSettings.development = false;
 
+        var scene = "Assets/Scenes/StreetMatch.unity";
         var opts = new BuildPlayerOptions
         {
-            scenesToBuild = new[] { "Assets/Scenes/StreetMatch.unity" },
+            scenes = new[] { scene },
             locationPathName = "Builds/PakistanStreetFootball.apk",
             target = BuildTarget.Android,
             options = BuildOptions.None
         };
 
         var report = BuildPipeline.BuildPlayer(opts);
-        if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+        if (report.summary.result != BuildResult.Succeeded)
             throw new System.Exception("Android build failed: " + report.summary.result);
 
         Debug.Log("APK READY: " + Path.GetFullPath(opts.locationPathName));
