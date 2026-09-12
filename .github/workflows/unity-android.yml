@@ -18,10 +18,9 @@ jobs:
       - name: Build Unity Android APK
         uses: game-ci/unity-builder@v4
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
           unityVersion: 6000.3.2f1
           targetPlatform: Android
@@ -29,6 +28,13 @@ jobs:
           androidExportType: androidPackage
           androidTargetSdkVersion: AndroidApiLevel35
           customImage: unityci/editor:ubuntu-6000.3.2f1-android-3
+
+      - name: Verify APK exists
+        shell: bash
+        run: |
+          test -f Builds/PakistanStreetFootball.apk
+          file Builds/PakistanStreetFootball.apk
+          unzip -t Builds/PakistanStreetFootball.apk >/dev/null
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
