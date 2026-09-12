@@ -1,0 +1,36 @@
+name: Unity Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Build Unity Android APK
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: 6000.3.2f1
+          targetPlatform: Android
+          buildMethod: AndroidBuild.Build
+          androidExportType: androidPackage
+          androidTargetSdkVersion: AndroidApiLevel35
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Efootball-Android-APK
+          path: build/**/*.apk
+          if-no-files-found: error
