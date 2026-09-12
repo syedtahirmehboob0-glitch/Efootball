@@ -53,25 +53,38 @@ jobs:
           APK="Builds/PakistanStreetFootball.apk"
           test -s "$APK"
           BUILD_TOOLS="${ANDROID_HOME}/build-tools/$(ls "${ANDROID_HOME}/build-tools" | sort -V | tail -1)"
-          KEYSTORE="${RUNNER_TEMP}/debug.keystore"
-          keytool -genkeypair -v \
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+          test -x "$ZIPALIGN" || { echo "::error::zipalign not found: $ZIPALIGN"; exit 1; }
+          test -x "$APKSIGNER" || { echo "::error::apksigner not found: $APKSIGNER"; exit 1; }
+
+          KEYSTORE="${RUNNER_TEMP}/android-debug.jks"
+          ALIGNED="${RUNNER_TEMP}/PakistanStreetFootball-aligned.apk"
+          rm -f "$KEYSTORE" "$ALIGNED"
+
+          keytool -genkeypair -noprompt \
             -keystore "$KEYSTORE" \
+            -storetype JKS \
             -storepass android \
             -alias androiddebugkey \
             -keypass android \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
-          ALIGNED="${APK%.apk}-aligned.apk"
-          "$BUILD_TOOLS/zipalign" -f -p 4 "$APK" "$ALIGNED"
-          "$BUILD_TOOLS/apksigner" sign \
+
+          "$ZIPALIGN" -f -p 4 "$APK" "$ALIGNED"
+          test -s "$ALIGNED"
+
+          "$APKSIGNER" sign \
             --ks "$KEYSTORE" \
+            --ks-type JKS \
             --ks-pass pass:android \
             --key-pass pass:android \
             --ks-key-alias androiddebugkey \
             --out "$APK" \
             "$ALIGNED"
-          rm -f "$ALIGNED"
-          "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
+
+          test -s "$APK"
+          "$APKSIGNER" verify --verbose "$APK"
           unzip -t "$APK" >/dev/null
           file "$APK"
           echo "SIGNED APK READY: $APK"
@@ -82,5 +95,3 @@ jobs:
           name: Efootball-Android-APK
           path: Builds/PakistanStreetFootball.apk
           if-no-files-found: error
-
-# Force CI rebuild to inspect the current Unity Android build.
