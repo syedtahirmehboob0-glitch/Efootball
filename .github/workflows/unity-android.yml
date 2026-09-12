@@ -44,3 +44,5 @@ jobs:
           name: Efootball-Android-APK
           path: Builds/PakistanStreetFootball.apk
           if-no-files-found: error
+
+# CI trigger: rebuild after corrected Unity ULF licensing configuration.
