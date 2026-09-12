@@ -19,3 +19,5 @@ Open the project in Unity Hub, let packages import, then open `Assets/Scenes/Str
 
 ## Android
 The repository includes an editor build entry point. A licensed Unity 6.3 LTS Android-capable build runner is required to produce the APK; the project itself contains the Android player settings and build automation.
+
+Build pipeline: Android serial activation + APK integrity verification.
