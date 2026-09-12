@@ -44,15 +44,37 @@ jobs:
           androidExportType: androidPackage
           androidTargetSdkVersion: AndroidApiLevel35
           customImage: unityci/editor:ubuntu-6000.3.2f1-android-3
+          customParameters: -logFile /tmp/unity-build.log
 
-      - name: Verify APK exists and is a valid ZIP
+      - name: Sign and verify APK
         shell: bash
         run: |
-          set -e
-          test -s Builds/PakistanStreetFootball.apk
-          file Builds/PakistanStreetFootball.apk
-          unzip -t Builds/PakistanStreetFootball.apk >/dev/null
-          echo "APK integrity check passed"
+          set -euo pipefail
+          APK="Builds/PakistanStreetFootball.apk"
+          test -s "$APK"
+          BUILD_TOOLS="${ANDROID_HOME}/build-tools/$(ls "${ANDROID_HOME}/build-tools" | sort -V | tail -1)"
+          KEYSTORE="${RUNNER_TEMP}/debug.keystore"
+          keytool -genkeypair -v \
+            -keystore "$KEYSTORE" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          ALIGNED="${APK%.apk}-aligned.apk"
+          "$BUILD_TOOLS/zipalign" -f -p 4 "$APK" "$ALIGNED"
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$KEYSTORE" \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --ks-key-alias androiddebugkey \
+            --out "$APK" \
+            "$ALIGNED"
+          rm -f "$ALIGNED"
+          "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
+          unzip -t "$APK" >/dev/null
+          file "$APK"
+          echo "SIGNED APK READY: $APK"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
