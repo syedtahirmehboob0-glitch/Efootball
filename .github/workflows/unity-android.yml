@@ -27,10 +27,11 @@ jobs:
           buildMethod: AndroidBuild.Build
           androidExportType: androidPackage
           androidTargetSdkVersion: AndroidApiLevel35
+          customImage: unityci/editor:ubuntu-6000.3.2f1-android-3
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Efootball-Android-APK
-          path: build/**/*.apk
+          path: Builds/PakistanStreetFootball.apk
           if-no-files-found: error
