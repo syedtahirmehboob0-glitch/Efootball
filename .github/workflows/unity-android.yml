@@ -18,7 +18,7 @@ jobs:
       - name: Build Unity Android APK
         uses: game-ci/unity-builder@v4
         env:
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
@@ -29,12 +29,14 @@ jobs:
           androidTargetSdkVersion: AndroidApiLevel35
           customImage: unityci/editor:ubuntu-6000.3.2f1-android-3
 
-      - name: Verify APK exists
+      - name: Verify APK exists and is a valid ZIP
         shell: bash
         run: |
-          test -f Builds/PakistanStreetFootball.apk
+          set -e
+          test -s Builds/PakistanStreetFootball.apk
           file Builds/PakistanStreetFootball.apk
           unzip -t Builds/PakistanStreetFootball.apk >/dev/null
+          echo "APK integrity check passed"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
