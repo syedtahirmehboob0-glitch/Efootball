@@ -15,6 +15,22 @@ jobs:
         with:
           lfs: true
 
+      - name: Validate Unity CI secrets
+        shell: bash
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$UNITY_EMAIL" || { echo "::error::UNITY_EMAIL is empty"; exit 1; }
+          test -n "$UNITY_PASSWORD" || { echo "::error::UNITY_PASSWORD is empty"; exit 1; }
+          test -n "$UNITY_LICENSE" || { echo "::error::UNITY_LICENSE is empty"; exit 1; }
+          printf '%s' "$UNITY_LICENSE" | grep -q '<root' || { echo "::error::UNITY_LICENSE does not look like a Unity ULF XML file"; exit 1; }
+          printf '%s' "$UNITY_LICENSE" | grep -q '<License ' || { echo "::error::UNITY_LICENSE is missing the Unity License element"; exit 1; }
+          printf '%s' "$UNITY_LICENSE" | grep -q '<Signature' || { echo "::error::UNITY_LICENSE is missing the XML signature"; exit 1; }
+          echo "Unity CI license secret structure check passed."
+
       - name: Build Unity Android APK
         uses: game-ci/unity-builder@v4
         env:
