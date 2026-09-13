@@ -63,9 +63,10 @@ jobs:
           test -s "$APK"
           BUILD_TOOLS="${ANDROID_HOME}/build-tools/$(ls "${ANDROID_HOME}/build-tools" | sort -V | tail -1)"
           ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
           test -x "$ZIPALIGN" || { echo "::error::zipalign not found: $ZIPALIGN"; exit 1; }
+          test -x "$APKSIGNER" || { echo "::error::apksigner not found: $APKSIGNER"; exit 1; }
           command -v keytool
-          command -v jarsigner
 
           KEYSTORE="${RUNNER_TEMP}/android-debug.jks"
           ALIGNED="${RUNNER_TEMP}/PakistanStreetFootball-aligned.apk"
@@ -84,23 +85,25 @@ jobs:
           "$ZIPALIGN" -f -p 4 "$APK" "$ALIGNED"
           test -s "$ALIGNED"
 
-          jarsigner \
-            -keystore "$KEYSTORE" \
-            -storetype JKS \
-            -storepass android \
-            -keypass android \
-            -sigalg SHA256withRSA \
-            -digestalg SHA-256 \
-            -signedjar "$SIGNED" \
-            "$ALIGNED" \
-            androiddebugkey
+          "$APKSIGNER" sign \
+            --ks "$KEYSTORE" \
+            --ks-type JKS \
+            --ks-key-alias androiddebugkey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --min-sdk-version 26 \
+            --out "$SIGNED" \
+            "$ALIGNED"
 
           test -s "$SIGNED"
-          jarsigner -verify -verbose -certs "$SIGNED" > "${RUNNER_TEMP}/jarsigner-verify.txt" 2>&1
-          cat "${RUNNER_TEMP}/jarsigner-verify.txt"
-          grep -qi "jar verified" "${RUNNER_TEMP}/jarsigner-verify.txt" || { echo "::error::jarsigner verification did not report a verified APK"; exit 1; }
+          "$APKSIGNER" verify --verbose --print-certs "$SIGNED"
 
-          cp "$SIGNED" "$APK"
+          sudo cp "$SIGNED" "$APK"
+          sudo chown "$(id -u):$(id -g)" "$APK"
+          chmod u+rw "$APK"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
           file "$APK"
