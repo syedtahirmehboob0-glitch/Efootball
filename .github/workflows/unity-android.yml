@@ -58,13 +58,13 @@ jobs:
           test -x "$ZIPALIGN" || { echo "::error::zipalign not found: $ZIPALIGN"; exit 1; }
           test -x "$APKSIGNER" || { echo "::error::apksigner not found: $APKSIGNER"; exit 1; }
 
-          KEYSTORE="${RUNNER_TEMP}/android-debug.jks"
+          KEYSTORE="${RUNNER_TEMP}/android-debug.p12"
           ALIGNED="${RUNNER_TEMP}/PakistanStreetFootball-aligned.apk"
           rm -f "$KEYSTORE" "$ALIGNED"
 
           keytool -genkeypair -noprompt \
             -keystore "$KEYSTORE" \
-            -storetype JKS \
+            -storetype PKCS12 \
             -storepass android \
             -alias androiddebugkey \
             -keypass android \
@@ -73,18 +73,22 @@ jobs:
 
           "$ZIPALIGN" -f -p 4 "$APK" "$ALIGNED"
           test -s "$ALIGNED"
+          mv "$ALIGNED" "$APK"
 
           "$APKSIGNER" sign \
             --ks "$KEYSTORE" \
-            --ks-type JKS \
+            --ks-type PKCS12 \
             --ks-pass pass:android \
             --key-pass pass:android \
             --ks-key-alias androiddebugkey \
-            --out "$APK" \
-            "$ALIGNED"
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --v4-signing-enabled false \
+            "$APK"
 
           test -s "$APK"
-          "$APKSIGNER" verify --verbose "$APK"
+          "$APKSIGNER" verify --verbose --min-sdk-version 26 "$APK"
           unzip -t "$APK" >/dev/null
           file "$APK"
           echo "SIGNED APK READY: $APK"
