@@ -20,12 +20,9 @@ public static class AndroidBuild
         PlayerSettings.productName = "Pakistan Street Football";
         PlayerSettings.companyName = "Pakistan Street Football Studio";
         PlayerSettings.applicationIdentifier = "com.pakistan.streetfootball";
-        PlayerSettings.bundleVersion = "0.2.0";
-        PlayerSettings.Android.bundleVersionCode = 2;
+        PlayerSettings.bundleVersion = "0.2.1";
+        PlayerSettings.Android.bundleVersionCode = 3;
 
-        // Prefer the most conservative Android runtime configuration for this first
-        // device-tested build. Mono avoids an IL2CPP startup failure masking the game
-        // itself, while OpenGLES3 avoids device-specific Vulkan initialization crashes.
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
@@ -37,7 +34,6 @@ public static class AndroidBuild
 
         EditorUserBuildSettings.buildAppBundle = false;
         EditorUserBuildSettings.development = false;
-        EditorUserBuildSettings.allowUnsafeCode = false;
 
         var scene = "Assets/Scenes/StreetMatch.unity";
         var opts = new BuildPlayerOptions
