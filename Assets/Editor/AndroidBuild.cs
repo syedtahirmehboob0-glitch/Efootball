@@ -17,14 +17,22 @@ public static class AndroidBuild
         StreetFootballBootstrap.BuildDemo();
         Directory.CreateDirectory("Builds");
 
+        // Explicitly activate Android before changing Android-specific PlayerSettings.
+        // Unity 6 can otherwise keep the Android architecture at None even when the
+        // targetArchitectures property is assigned while another platform is active.
+        if (!EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android))
+            throw new System.Exception("Could not activate Android build target.");
+
         PlayerSettings.productName = "Pakistan Street Football";
         PlayerSettings.companyName = "Pakistan Street Football Studio";
-        PlayerSettings.applicationIdentifier = "com.pakistan.streetfootball";
-        PlayerSettings.bundleVersion = "0.2.1";
-        PlayerSettings.Android.bundleVersionCode = 3;
+        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.pakistan.streetfootball");
+        PlayerSettings.bundleVersion = "0.2.2";
+        PlayerSettings.Android.bundleVersionCode = 4;
 
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+        if (PlayerSettings.Android.targetArchitectures == AndroidArchitecture.None)
+            throw new System.Exception("Android ARM64 architecture was not applied.");
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
         PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
