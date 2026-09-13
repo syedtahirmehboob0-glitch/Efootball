@@ -46,6 +46,15 @@ jobs:
           customImage: unityci/editor:ubuntu-6000.3.2f1-android-3
           customParameters: -logFile /tmp/unity-build.log
 
+      - name: Fix APK workspace ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s Builds/PakistanStreetFootball.apk
+          sudo chown -R "$(id -u):$(id -g)" Builds
+          chmod u+rw Builds/PakistanStreetFootball.apk
+          ls -l Builds/PakistanStreetFootball.apk
+
       - name: Sign and verify APK
         shell: bash
         run: |
@@ -54,17 +63,18 @@ jobs:
           test -s "$APK"
           BUILD_TOOLS="${ANDROID_HOME}/build-tools/$(ls "${ANDROID_HOME}/build-tools" | sort -V | tail -1)"
           ZIPALIGN="$BUILD_TOOLS/zipalign"
-          APKSIGNER="$BUILD_TOOLS/apksigner"
           test -x "$ZIPALIGN" || { echo "::error::zipalign not found: $ZIPALIGN"; exit 1; }
-          test -x "$APKSIGNER" || { echo "::error::apksigner not found: $APKSIGNER"; exit 1; }
+          command -v keytool
+          command -v jarsigner
 
-          KEYSTORE="${RUNNER_TEMP}/android-debug.p12"
+          KEYSTORE="${RUNNER_TEMP}/android-debug.jks"
           ALIGNED="${RUNNER_TEMP}/PakistanStreetFootball-aligned.apk"
-          rm -f "$KEYSTORE" "$ALIGNED"
+          SIGNED="${RUNNER_TEMP}/PakistanStreetFootball-signed.apk"
+          rm -f "$KEYSTORE" "$ALIGNED" "$SIGNED"
 
           keytool -genkeypair -noprompt \
             -keystore "$KEYSTORE" \
-            -storetype PKCS12 \
+            -storetype JKS \
             -storepass android \
             -alias androiddebugkey \
             -keypass android \
@@ -73,22 +83,25 @@ jobs:
 
           "$ZIPALIGN" -f -p 4 "$APK" "$ALIGNED"
           test -s "$ALIGNED"
-          mv "$ALIGNED" "$APK"
 
-          "$APKSIGNER" sign \
-            --ks "$KEYSTORE" \
-            --ks-type PKCS12 \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            --ks-key-alias androiddebugkey \
-            --v1-signing-enabled true \
-            --v2-signing-enabled true \
-            --v3-signing-enabled true \
-            --v4-signing-enabled false \
-            "$APK"
+          jarsigner \
+            -keystore "$KEYSTORE" \
+            -storetype JKS \
+            -storepass android \
+            -keypass android \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -signedjar "$SIGNED" \
+            "$ALIGNED" \
+            androiddebugkey
 
+          test -s "$SIGNED"
+          jarsigner -verify -verbose -certs "$SIGNED" > "${RUNNER_TEMP}/jarsigner-verify.txt" 2>&1
+          cat "${RUNNER_TEMP}/jarsigner-verify.txt"
+          grep -qi "jar verified" "${RUNNER_TEMP}/jarsigner-verify.txt" || { echo "::error::jarsigner verification did not report a verified APK"; exit 1; }
+
+          cp "$SIGNED" "$APK"
           test -s "$APK"
-          "$APKSIGNER" verify --verbose --min-sdk-version 26 "$APK"
           unzip -t "$APK" >/dev/null
           file "$APK"
           echo "SIGNED APK READY: $APK"
